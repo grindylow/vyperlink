@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+{% block content %}
+  {% for entry in entries %}
+    <div class="element">
+      <p>{{ entry.getHTML() }}</p>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

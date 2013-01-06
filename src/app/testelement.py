@@ -3,7 +3,7 @@ import unittest
 
 class BasicTests(unittest.TestCase):
 
-    def test_basic_elements(self):
+    def test_create_basic_elements(self):
         self.assertEqual(1,2)
 
     def test_another_test(self):

@@ -18,10 +18,19 @@ the given context. This raw text can be fed through a formatter to
 achieve HTML, Latex, etc. output."""
         pass
 
+    def getHTML(self):
+        """Convenience method for initial implementation: return
+        contents in approximated HTML"""
+        return "Element-Base-Class"
+
     pass
 
 class TextElement(Element):
     v_content = StringField()
+
+    def getHTML(self):
+        return self.v_content
+
     pass
 
 class CollectionElement(Element):
