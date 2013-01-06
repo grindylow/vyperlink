@@ -20,12 +20,24 @@ Python/Virtualenv setup
   source vyperenv/bin/activate
 
 
+Other (Ubuntu) Packages
+-----------------------
+
+  sudo apt-get install mongodb
+  sudo apt-get install build-essential python-dev
+    (required by pip install mongoengine)
+
+
+
 Python required packages
 ------------------------
 
 Frameworks, interface layers, etc.:
   pip install flask
   pip install flask-debugtoolbar
+  pip install mongoengine
+
+//  pip install flask-mongoengine
 
 Not strictly necessary, but very useful:
   pip install ipython
