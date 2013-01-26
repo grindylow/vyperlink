@@ -2,7 +2,19 @@
 {% block content %}
   {% for entry in entries %}
     <div class="element">
-      <p>{{ entry.getHTML() }}</p>
+      <div class="info">
+	<p>AGD013.17</p>
+	<div class="debuginfo">
+	  <p>2013-01-23T17:27:31.265</p>
+	</div>
+      </div>
+      <div class="maincontent">
+	<p>{{ entry.getHTML() }}</p>
+      </div>
+      <div class="actions">
+	<input type="button" value="Edit" />
+	<input type="button" value="Save" />
+      </div>
     </div>
   {% endfor %}
 </div>

@@ -38,6 +38,9 @@ class CollectionElement(Element):
     are the 'content' of the CollectionElement."""
     v_contained_ids = ListField(StringField())
 
+    def getHTML(self):
+        return "CollectionElement"
+
 if __name__ == "__main__":
     # run unit tests
     pass

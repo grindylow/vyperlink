@@ -1,0 +1,49 @@
+/* Vyperlink master CSS file */
+
+.info { width: 100px;
+        background: -moz-linear-gradient(top,  lightgrey,  #efe);
+        font-size:75%;
+        position: absolute;
+        left:2px;
+        top: 4px;
+        /*text-align: right;*/
+}
+
+.info p { margin: 1px;
+          border: 0;
+}
+
+.info:hover { background: lightgrey;
+}
+
+.debuginfo { color: grey;
+             font-size: 60%;
+             font-family: arial;
+}
+
+.element { padding-left: 110px;
+               /*padding: 15px;*/
+               background: -moz-linear-gradient(top,  lightgrey,  #efe);;
+               position: relative;
+               top: 0px;
+               width: 500px;
+}
+
+.maincontent { width: 150px;
+               background: -moz-linear-gradient(top,  #6e6,  #efe);
+}
+
+.maincontent p { margin: 0; 
+padding-top:4px;
+padding-bottom:4px;
+}
+
+.actions { margin-left: 660px;
+           position: absolute;
+           top: 0px;
+           right: 0px;
+           width: 120px;
+           background: lightyellow;
+
+
+}

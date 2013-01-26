@@ -17,3 +17,8 @@ if __name__ == "__main__":
     e3.v_id = 'DOC101.3'
     e3.save()
     
+    eA = CollectionElement()
+    eA.v_id = 'DOC101'
+    eA.v_contained_ids = [ "DOC101.1", "DOC101.2", "DOC101.7" ]
+    eA.v_timestamp = datetime.now()
+    eA.save()
