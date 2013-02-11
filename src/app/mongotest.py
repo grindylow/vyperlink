@@ -9,12 +9,12 @@ if __name__ == "__main__":
     e1.v_timestamp = datetime.now()
     e1.save()
 
-    e2 = Element(v_id='DOC101.2',v_content='Second paragraph.')
+    e2 = TextElement(v_id='DOC101.2',v_content='Second paragraph.')
     e2.v_timestamp = datetime.now()
     e2.save()
 
-    e3 = e2
-    e3.v_id = 'DOC101.3'
+    e3 = TextElement(v_id='DOC101.7',v_content='Seventh paraglider. Rev 2.')
+    e3.v_timestamp = datetime.now()
     e3.save()
     
     eA = CollectionElement()

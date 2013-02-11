@@ -29,20 +29,89 @@ function vOnSave() {
 
 /* capture common functionality of the two.
      in action: "edit" or "save"
-     in el:     jquery element pointing to the clicked button
+    in el:     jquery element pointing to the clicked button
 */
 function vEditOrSaveElement( action, el ) {
-    console.log(el);
-    console.log(el.parent().parent().html());
+    var ref = el.parent().parent();
+    // find the ID of the element we're dealing with (implementation might change)
+    var id = ref.find(".vid").html();  // @todo maybe put into separate method
+    
+    var savebutton = ref.find(".savebutton");
+    var editbutton = ref.find(".editbutton");
 
-    // identify some key elements
-    top = $(el).parent().parent();
-    editdiv = top; // @todo dive down
-    //textbox = editdiv.find(".textbox");
+    //alert("I am about to "+action+" element "+id+"!");
 
     // only edit if not already editing...
-    //...
-    // ajax-get "raw" content, then enable editing
+    if(action=="edit") {
+	// ajax-get "raw" content, then enable editing
+	el.attr("disabled","disabled"); // visual feedback
+	$.ajax({
+	    url: "/getrawforediting",
+	    data: { "id":id },
+	    success: function(data,textStatus,xhr) {
+		vDoEditElement(ref,data);
+		//alert("success");
+	    },
+	    error: function() {
+		alert("error");
+		el.removeAttr("disabled");
+	    }
+	});
+    }
+
+    if(action=="save") {
+	// ajax-write "raw" content, then ajax-read parsed content
+	//el.attr("disabled","disabled"); // visual feedback
+	var editbox = ref.find(".itemeditor");
+	var textarea = editbox.find("textarea");
+	var rawtext = textarea.val();
+	alert(rawtext);
+	$.ajax({
+	    url: "/putrawafterediting",
+	    data: { "id":id,
+		    "rawtext":rawtext },
+	    type: "post",
+	    success: function(data,textStatus,xhr) {
+		editbutton.removeAttr("disabled");
+		vDoSaveElementPart1(ref,data);
+		//alert("success");
+	    },
+	    error: function() {
+		alert("error");
+	    }
+	});
+    }
+}
+
+// Unhide the text field, load it with the raw contents as retrieved
+// from the server, and let the user edit to her heart's content.
+function vDoEditElement(ref,data) {
+    var editbox = ref.find(".itemeditor");
+    var textarea = editbox.find("textarea");
+    var displaybox = ref.find(".itempresenter");
+    //alert(editbox.html());
+    displaybox.hide();
+    textarea.val(data.r);
+    editbox.show();
+    //alert(data.r);
+}
+
+// Write raw text back to server. Show parsed HTML (again).
+// Conveniently, AJAX-storing the new raw text will return
+// the parsed HTML version, which we procede to display right away.
+function vDoSaveElementPart1(ref,data) {
+    var editbox = ref.find(".itemeditor");
+    var textarea = editbox.find("textarea");
+    var displaybox = ref.find(".itempresenter");
+    //alert(editbox.html());
+    textarea.val("text removed for safety");
+    displaybox.html(data.r);
+    editbox.hide();
+    displaybox.show();
+    //alert(data.r);
+
+    // re-enable "edit" button
+    
 }
 
 

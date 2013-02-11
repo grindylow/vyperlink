@@ -18,10 +18,19 @@ the given context. This raw text can be fed through a formatter to
 achieve HTML, Latex, etc. output."""
         pass
 
+    def getID(self):
+        return self.v_id
+
     def getHTML(self):
         """Convenience method for initial implementation: return
         contents in approximated HTML"""
         return "Element-Base-Class"
+
+    def getTSStr(self):
+        """2013-01-23T17:27:31.265"""
+        s = "%s.%03d"%(self.v_timestamp.strftime("%Y-%m-%dT%H:%M:%S"),
+                       self.v_timestamp.microsecond/1000)
+        return s
 
     pass
 
