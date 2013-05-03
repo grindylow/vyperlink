@@ -1,0 +1,34 @@
+What Works So Far
+=================
+
+Create a new document ("Container Element") by going to
+  http://localhost:5000/create/{{documentname}}, e.g.
+  http://localhost:5000/create/DOC711
+
+Show/Edit the document by pointing your browser at
+  http://localhost:5000/show/DOC711
+
+Insert new text elements above/below the current one with
+the corresponding action icons.
+
+Edit text with the "pencil" icon.
+
+Save your changes with the "checkmark" icon.
+
+Navigate from the element currently being edited to the one
+above/below using the arrow keys when the caret is at the
+beginning/end of the text field.
+
+
+What Should Work Soon
+=====================
+
+Create implicit properties/attributes by simply specifying
+
+  name: value
+
+pairs inside any text elements. These properties will propagate
+up to the containing element (and beyond? tbd.).
+
+Create explicit properties by clicking the "properties" icon of
+the corresponding element.

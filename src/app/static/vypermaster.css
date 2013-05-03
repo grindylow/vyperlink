@@ -1,5 +1,8 @@
 /* Vyperlink master CSS file */
 
+.docid { display: none;
+}
+
 .info { width: 100px;
         background: -moz-linear-gradient(top,  lightgrey,  #efe);
         font-size:75%;

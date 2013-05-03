@@ -31,7 +31,7 @@ def putrawafterediting():
     connect("vyperlink_main")
     el = TextElement(v_id=id,v_content=rawtext,v_timestamp = datetime.now())
     el.save()
-    return jsonify(r="Processed: %s"%rawtext)
+    return jsonify(r=rawtext)
 
 @app.route("/insertbelow",methods=["POST"])
 def insertbelow():
@@ -54,6 +54,36 @@ def insertbelow():
     l = r.v_contained_ids
     index = l.index(id)
     l.insert(index+1,newid)
+
+    el = CollectionElement()
+    el.v_id = r.v_id
+    el.v_timestamp = ts
+    el.v_contained_ids = l
+    el.save()
+
+    return jsonify(id=newid,ts="11T22:22:22.222")
+
+@app.route("/insertabove",methods=["POST"])
+def insertabove():
+    id = request.form["id"]
+    parentid = request.form["parentid"]
+    connect("vyperlink_main")
+    newid = inventNewId(id,parentid)
+    ts = datetime.now()
+    #@todo potential race condition between inventNewId and actual save-to-database
+
+    # create the new element
+    el = TextElement(v_id=newid,v_content="newly created",v_timestamp = ts)
+    el.save()
+
+    # update parent (=container)
+    r = Element.objects(v_id=parentid).order_by('-v_timestamp')[0]  #,ts<=ts
+    if not isinstance(r,CollectionElement):
+        raise BaseException( "parent is NOT a ContainerElement" )
+
+    l = r.v_contained_ids
+    index = l.index(id)
+    l.insert(index,newid)
 
     el = CollectionElement()
     el.v_id = r.v_id
