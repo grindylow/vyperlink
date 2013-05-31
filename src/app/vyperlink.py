@@ -1,5 +1,6 @@
 from flask import Flask,render_template,jsonify,request
 from flask_debugtoolbar import DebugToolbarExtension
+from pymongo import MongoClient
 from element import *
 from datetime import *
 
@@ -19,9 +20,9 @@ def hello():
 
 @app.route("/getrawforediting")
 def getrawforediting():
+    collection = openDB()
     id = request.args.get("id")
-    connect("vyperlink_main")
-    r = Element.objects(v_id=id).order_by('-v_timestamp')[0]  #,ts<=ts
+    r = Element.retrieveFromDB(collection,id)
     return jsonify(r=r.v_content)
 
 @app.route("/putrawafterediting",methods=["POST"])
@@ -31,41 +32,41 @@ def putrawafterediting():
     # @todo Have any "explicit" variables been changed? If so,
     #       propagate those changes to my parent. (...and they to theirs
     #       etc etc...)
+    collection = openDB()
     id = request.form["id"]
     rawtext = request.form["rawtext"]
-    connect("vyperlink_main")
-    el = TextElement(v_id=id,v_content=rawtext,v_timestamp = datetime.now())
-    el.extractVariables()
-    el.save()
+    r = Element.retrieveFromDB(collection,id)
+    r.v_content = rawtext
+    r.v_ts = datetime.now()
+    r.extractVariables()
+    r.save(collection)
     return jsonify(r=rawtext)
 
 @app.route("/insertbelow",methods=["POST"])
 def insertbelow():
     id = request.form["id"]
     parentid = request.form["parentid"]
-    connect("vyperlink_main")
-    newid = inventNewId(id,parentid)
+    collection = openDB()
+    newid = inventNewId(collection,id,parentid)
     ts = datetime.now()
     #@todo potential race condition between inventNewId and actual save-to-database
 
     # create the new element
-    el = TextElement(v_id=newid,v_content="newly created",v_timestamp = ts)
-    el.save()
+    el = TextElement(v_id=newid,v_content="newly created",v_ts = ts)
+    el.save(collection)
 
     # update parent (=container)
-    r = Element.objects(v_id=parentid).order_by('-v_timestamp')[0]  #,ts<=ts
+    r = Element.retrieveFromDB(collection,parentid)
     if not isinstance(r,CollectionElement):
-        raise BaseException( "parent is NOT a ContainerElement" )
+        raise BaseException( "parent is NOT a CollectionElement" )
 
     l = r.v_contained_ids
     index = l.index(id)
     l.insert(index+1,newid)
 
-    el = CollectionElement()
-    el.v_id = r.v_id
-    el.v_timestamp = ts
-    el.v_contained_ids = l
-    el.save()
+    r.v_ts = ts
+    r.v_contained_ids = l
+    r.save(collection)
 
     return jsonify(id=newid,ts="11T22:22:22.222")
 
@@ -73,33 +74,31 @@ def insertbelow():
 def insertabove():
     id = request.form["id"]
     parentid = request.form["parentid"]
-    connect("vyperlink_main")
-    newid = inventNewId(id,parentid)
+    collection = openDB()
+    newid = inventNewId(collection,id,parentid)
     ts = datetime.now()
     #@todo potential race condition between inventNewId and actual save-to-database
 
     # create the new element
-    el = TextElement(v_id=newid,v_content="newly created",v_timestamp = ts)
-    el.save()
+    el = TextElement(v_id=newid,v_content="newly created",v_ts = ts)
+    el.save(collection)
 
     # update parent (=container)
-    r = Element.objects(v_id=parentid).order_by('-v_timestamp')[0]  #,ts<=ts
+    r = Element.retrieveFromDB(collection,parentid)
     if not isinstance(r,CollectionElement):
-        raise BaseException( "parent is NOT a ContainerElement" )
+        raise BaseException( "parent is NOT a CollectionElement" )
 
     l = r.v_contained_ids
     index = l.index(id)
     l.insert(index,newid)
 
-    el = CollectionElement()
-    el.v_id = r.v_id
-    el.v_timestamp = ts
-    el.v_contained_ids = l
-    el.save()
+    r.v_ts = ts
+    r.v_contained_ids = l
+    r.save(collection)
 
     return jsonify(id=newid,ts="11T22:22:22.222")
 
-def inventNewId(startingPoint,parentid=""):
+def inventNewId(collection,startingPoint,parentid=""):
     """Invent a new ID that looks similar to startingPoint. Ensure it
     is unique. If parent is given, use that as a stronger hint as to what
     children IDs should look like."""
@@ -115,46 +114,52 @@ def inventNewId(startingPoint,parentid=""):
     while True:
         suggestedId = parentid + "." + str(i)
         # check if this id already exists in the database
-        r = Element.objects(v_id=suggestedId)
-        if len(r)==0:
+        if not Element.doesIDExist(collection,suggestedId):
             break
         i = i + 1
     return suggestedId
 
+def openDB():
+    """
+    Return a handle to the collection that holds our elements.
+    """
+    client = MongoClient('localhost',27017)
+    db = client.UnitTestingDB
+    collection = db.elements
+    return collection
+
 @app.route("/create/<id>")
 def create(id=None):
     """Create a new CollectionElement with the given ID"""
-    connect("vyperlink_main")
-    ts = datetime.now() # now
+    collection = openDB()
+    ts = datetime.now()
 
     # (1) check ID doesn't exist already
-    r = Element.objects(v_id=id)
-    if len(r)>0:
-        return "%s exists already"%(id)
+    if Element.doesIDExist(collection,id):
+        return 'Element "%s" exists already. <a href="/show/%s">Show!</a>' % (id,id)
     
     # (2) create a first contained (text) element
-    newid = inventNewId("",id)
-    el = TextElement(v_id=newid,v_content="Insert content here...",v_timestamp = ts)
-    el.save()
+    newid = inventNewId(collection,"",id)
+    el = TextElement(v_id=newid,v_content="Insert content here...",
+                     v_ts=ts)
+    el.save(collection)
 
     # (3) create a new collection element
-    el = CollectionElement()
-    el.v_id = id
-    el.v_timestamp = ts
-    el.v_contained_ids = [newid]
-    el.save()
+    el = CollectionElement(v_id=id,v_ts=ts,v_contained_ids=[newid])
+    el.save(collection)
 
-    return "created!"
+    return 'Element "%s" created. <a href="/show/%s">Show!</a>' % (id,id)
 
 @app.route("/show/<id>")
 def show(id=None):
     """Show the given document (as HTML)"""
-    connect("vyperlink_main")
-    #ts = datetime.datetime() # now
+    collection = openDB()
 
     # (1) retrieve contained elements (parent must be a ContainerElement)
-    r = Element.objects(v_id=id).order_by('-v_timestamp')[0]
-    # will fail if it doesn't exist
+    try:
+        r = Element.retrieveFromDB(collection,id)
+    except:
+        return 'Element "%s" doesn\'t exist. <a href="/create/%s">Create!</a>' % (id,id)
 
     if not isinstance(r,CollectionElement):
         raise BaseException( "Is NOT Container" )
@@ -165,7 +170,7 @@ def show(id=None):
     all_elements = []
     for el_id in r.v_contained_ids:
         print "Retrieving element '%s'" % el_id
-        r = Element.objects(v_id=el_id).order_by('-v_timestamp')[0]
+        r = Element.retrieveFromDB(collection,el_id)
         all_elements.append(r)
 
 
@@ -173,10 +178,10 @@ def show(id=None):
     # h = tools.prerender_as_HTML(f)
 
     # further initial experiments
-    a = Element()
-    b = r
+    #a = Element()
+    #b = r
     c = TextElement(v_id="DOCX.a", v_content="Brown fox jumps over yellow dog.")
-    f = [a,b,c]
+    f = [c]
     #############################
 
     f = all_elements
