@@ -26,10 +26,16 @@ def getrawforediting():
 
 @app.route("/putrawafterediting",methods=["POST"])
 def putrawafterediting():
+    # @todo Check that submitted revision is based on the latest
+    #       revision currently in the database. If not -> conflict!
+    # @todo Have any "explicit" variables been changed? If so,
+    #       propagate those changes to my parent. (...and they to theirs
+    #       etc etc...)
     id = request.form["id"]
     rawtext = request.form["rawtext"]
     connect("vyperlink_main")
     el = TextElement(v_id=id,v_content=rawtext,v_timestamp = datetime.now())
+    el.extractVariables()
     el.save()
     return jsonify(r=rawtext)
 
@@ -108,7 +114,7 @@ def inventNewId(startingPoint,parentid=""):
     suggestedId = ""
     while True:
         suggestedId = parentid + "." + str(i)
-        #@todo check if this id already exists in the database
+        # check if this id already exists in the database
         r = Element.objects(v_id=suggestedId)
         if len(r)==0:
             break
