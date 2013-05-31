@@ -23,7 +23,7 @@ def getrawforediting():
     collection = openDB()
     id = request.args.get("id")
     r = Element.retrieveFromDB(collection,id)
-    return jsonify(r=r.v_content)
+    return jsonify(r=r.vars['v_content'])
 
 @app.route("/putrawafterediting",methods=["POST"])
 def putrawafterediting():
@@ -36,42 +36,27 @@ def putrawafterediting():
     id = request.form["id"]
     rawtext = request.form["rawtext"]
     r = Element.retrieveFromDB(collection,id)
-    r.v_content = rawtext
-    r.v_ts = datetime.now()
+    r.vars['v_content'] = rawtext
+    r.vars['v_ts'] = datetime.now()
     r.extractVariables()
     r.save(collection)
     return jsonify(r=rawtext)
 
 @app.route("/insertbelow",methods=["POST"])
 def insertbelow():
-    id = request.form["id"]
-    parentid = request.form["parentid"]
-    collection = openDB()
-    newid = inventNewId(collection,id,parentid)
-    ts = datetime.now()
-    #@todo potential race condition between inventNewId and actual save-to-database
-
-    # create the new element
-    el = TextElement(v_id=newid,v_content="newly created",v_ts = ts)
-    el.save(collection)
-
-    # update parent (=container)
-    r = Element.retrieveFromDB(collection,parentid)
-    if not isinstance(r,CollectionElement):
-        raise BaseException( "parent is NOT a CollectionElement" )
-
-    l = r.v_contained_ids
-    index = l.index(id)
-    l.insert(index+1,newid)
-
-    r.v_ts = ts
-    r.v_contained_ids = l
-    r.save(collection)
-
-    return jsonify(id=newid,ts="11T22:22:22.222")
+    return insertrelative(+1)
 
 @app.route("/insertabove",methods=["POST"])
 def insertabove():
+    return insertrelative(0)
+
+def insertrelative(offset):
+    """
+    Insert a new TextElement at current position +x.
+    x = 1: below current element
+    x = 0: at current element position (i.e. before current element)
+    This draws together common functionality from insertabove and insertbelow.
+    """
     id = request.form["id"]
     parentid = request.form["parentid"]
     collection = openDB()
@@ -80,7 +65,7 @@ def insertabove():
     #@todo potential race condition between inventNewId and actual save-to-database
 
     # create the new element
-    el = TextElement(v_id=newid,v_content="newly created",v_ts = ts)
+    el = TextElement( {'v_id':newid,'v_content':"newly created",'v_ts':ts} )
     el.save(collection)
 
     # update parent (=container)
@@ -88,12 +73,12 @@ def insertabove():
     if not isinstance(r,CollectionElement):
         raise BaseException( "parent is NOT a CollectionElement" )
 
-    l = r.v_contained_ids
+    l = r.vars['v_contained_ids']
     index = l.index(id)
-    l.insert(index,newid)
+    l.insert(index+offset,newid)
 
-    r.v_ts = ts
-    r.v_contained_ids = l
+    r.vars['v_ts'] = ts
+    r.vars['v_contained_ids'] = l
     r.save(collection)
 
     return jsonify(id=newid,ts="11T22:22:22.222")
@@ -140,12 +125,15 @@ def create(id=None):
     
     # (2) create a first contained (text) element
     newid = inventNewId(collection,"",id)
-    el = TextElement(v_id=newid,v_content="Insert content here...",
-                     v_ts=ts)
+    el = TextElement( { 'v_id':newid,
+                        'v_content':"Insert content here...",
+                        'v_ts':ts} )
     el.save(collection)
 
     # (3) create a new collection element
-    el = CollectionElement(v_id=id,v_ts=ts,v_contained_ids=[newid])
+    el = CollectionElement( { 'v_id':id,
+                              'v_ts':ts,
+                              'v_contained_ids':[newid] } )
     el.save(collection)
 
     return 'Element "%s" created. <a href="/show/%s">Show!</a>' % (id,id)
@@ -168,7 +156,7 @@ def show(id=None):
 
     # (recursively) retrieve all elements contained in the container
     all_elements = []
-    for el_id in r.v_contained_ids:
+    for el_id in r.vars['v_contained_ids']:
         print "Retrieving element '%s'" % el_id
         r = Element.retrieveFromDB(collection,el_id)
         all_elements.append(r)
@@ -180,7 +168,7 @@ def show(id=None):
     # further initial experiments
     #a = Element()
     #b = r
-    c = TextElement(v_id="DOCX.a", v_content="Brown fox jumps over yellow dog.")
+    c = TextElement({'v_id':"DOCX.a", 'v_content':"Brown fox jumps over yellow dog."})
     f = [c]
     #############################
 

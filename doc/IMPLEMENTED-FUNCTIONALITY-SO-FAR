@@ -31,4 +31,11 @@ pairs inside any text elements. These properties will propagate
 up to the containing element (and beyond? tbd.).
 
 Create explicit properties by clicking the "properties" icon of
-the corresponding element.
+the corresponding element. (Or maybe, in-line with the KISS principle,
+we will stick with only implicit properties for now.)
+
+Then:
+
+Refer to properties in other places.
+
+Query the database for elements with certain properties.
