@@ -37,6 +37,8 @@ Frameworks, interface layers, etc.:
   pip install flask-debugtoolbar
   pip install mongoengine
 
+  pip install markdown
+
 //  pip install flask-mongoengine
 
 Not strictly necessary, but very useful:

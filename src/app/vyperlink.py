@@ -37,10 +37,10 @@ def putrawafterediting():
     rawtext = request.form["rawtext"]
     r = Element.retrieveFromDB(collection,id)
     r.vars['v_content'] = rawtext
-    r.vars['v_ts'] = datetime.now()
+    r.vars['v_ts'] = datetime.utcnow()
     r.extractVariables()
     r.save(collection)
-    return jsonify(r=rawtext)
+    return jsonify(r=r.getHTML()) 
 
 @app.route("/insertbelow",methods=["POST"])
 def insertbelow():
@@ -61,7 +61,7 @@ def insertrelative(offset):
     parentid = request.form["parentid"]
     collection = openDB()
     newid = inventNewId(collection,id,parentid)
-    ts = datetime.now()
+    ts = datetime.utcnow()
     #@todo potential race condition between inventNewId and actual save-to-database
 
     # create the new element
@@ -117,7 +117,7 @@ def openDB():
 def create(id=None):
     """Create a new CollectionElement with the given ID"""
     collection = openDB()
-    ts = datetime.now()
+    ts = datetime.utcnow()
 
     # (1) check ID doesn't exist already
     if Element.doesIDExist(collection,id):
@@ -175,7 +175,7 @@ def show(id=None):
     f = all_elements
 
     # (2) pass individual elements on to the template for rendering
-    return render_template("show.html",entries=f,id=id)
+    return render_template("show.html",entries=f,id=id,collection=collection)
 
 if __name__ == "__main__":
     app.run()

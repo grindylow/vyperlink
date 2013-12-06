@@ -1,5 +1,6 @@
 from datetime import *
 import re
+import markdown
 
 class Element:
     """Elements are parents of TextElements, ContainerElements, etc."""
@@ -23,7 +24,7 @@ class Element:
     def getID(self):
         return self.vars['v_id']
 
-    def getHTML(self):
+    def getHTML(self,dbcollection=None):
         """
         Convenience method for initial implementation: return
         contents in approximated HTML
@@ -73,6 +74,8 @@ class Element:
             return TextElement(e)
         if e['v_class'] == 'CollectionElement':
             return CollectionElement(e)
+        if e['v_class'] == 'QueryElement':
+            return QueryElement(e)
         return CollectionElement()
 
 
@@ -82,8 +85,8 @@ class TextElement(Element):
         Element.__init__(self,vars)
         self.vars['v_class'] = 'TextElement'
 
-    def getHTML(self):
-        return self.vars['v_content']
+    def getHTML(self,dbcollection=None):
+        return markdown.markdown(self.vars['v_content'])
 
     def extractVariables(self):
         """Extract variable definitions from my rawtext. Store these variables
@@ -116,12 +119,69 @@ class CollectionElement(Element):
         Element.__init__(self,vars)
         self.vars['v_class'] = 'CollectionElement'
 
-    def getHTML(self):
+    def getHTML(self,dbcollection=None):
         return "CollectionElement"
+
+class QueryElement(Element):
+    """A database query. Displayed as a list or table containing the results."""
+
+    def __init__(self,vars):
+        Element.__init__(self,vars)
+        self.vars['v_class'] = 'QueryElement'
+
+    def getHTML(self,dbcollection=None):
+        # execute query
+        #
+        # For now, try a hard-coded example: Find all elements with ID
+        # "TICKET*.*" (latest revision, not deleted).  No nested
+        # queries in MongoDB! Therefore we need to do this in multiple
+        # steps. Lots of potential for optimisation! One potential
+        # option might be to use the divide and conquer (aka
+        # map-reduce) facility. And we still haven't totally given up
+        # on a more traditional SQL backend yet. This might just be a
+        # better fit for our data model. For the current prototype,
+        # the choice of backend doesn't matter much, though.
+        
+        # Step 1: retrieve all matching element IDs
+        r = dbcollection.find({'v_id':{"$regex":'^TICKET1.*'}}).distinct('v_id')
+
+        # Step 2: for each ID, retrieve latest version (considering
+        # query time)
+        obj_ids = []
+        for v_id in r:
+            e = dbcollection.find_one({'v_id':v_id},sort=[{'v_ts',-1}])
+            # omit if deleted
+            if not e:
+                raise "Should have returned a valid result."
+            if not e.has_key('v_deleted') or not e.v_deleted:
+                obj_ids.append(e)
+
+        # Step 3: if that version hasn't been deleted (note: already
+        #         taken care of by previous step), perform further
+        #         filtering according to query. Add to result set if
+        #         item makes it through all filters.
+
+        # not doing this for the time being @todo
+
+        # build result, present as table
+        
+        columns = [ 'v_id', 'v_class','responsible' ]
+        s = "<table><tr>"
+        for c in columns:
+            s += "<th>"+c+"</th>"
+        s += "</tr>"
+        for o in obj_ids:
+            s += "<tr>"
+            for c in columns:
+                s += '<td valign="top">'
+                if o.has_key(c):
+                    s += o[c]
+                s += "</td>"
+            s += "</tr>"
+        s += "</table>"
+        
+        return "QueryElement: <br />"+s
 
 if __name__ == "__main__":
     # run unit tests
     pass
-
-
-    

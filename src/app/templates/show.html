@@ -10,7 +10,7 @@
       </div>
       <div class="maincontent">
 	<div class="itempresenter">
-	  <p>{{ entry.getHTML() }}</p>
+	  {{ entry.getHTML(dbcollection=collection)|safe }}
 	</div>
 	<div class="itemeditor" style="display:none" >
 	  <textarea rows="5" cols="40"></textarea>

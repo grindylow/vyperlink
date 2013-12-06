@@ -4,7 +4,7 @@
 }
 
 .info { width: 100px;
-        background: -moz-linear-gradient(top,  lightgrey,  #efe);
+        background: -moz-linear-gradient(top,  #ddd,  #efe);
         font-size:75%;
         position: absolute;
         left:2px;
@@ -32,7 +32,7 @@
                width: 500px;
 }
 
-.maincontent { width: 150px;
+.maincontent { width: 350px;
                background: -moz-linear-gradient(top,  #6e6,  #efe);
 }
 
@@ -47,6 +47,7 @@ padding-bottom:4px;
            right: 0px;
            width: 120px;
            background: lightyellow;
+}
 
-
+.actions:hover { background: lightgrey;
 }
