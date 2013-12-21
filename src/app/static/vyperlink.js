@@ -33,7 +33,7 @@ function vOnSave() {
 
 function vOnInsertBelow() {
     el = $(this);
-    var ref = el.parent().parent();
+    var ref = el.parents(".element");  // was: el.parent().parent();
     // find the ID of the element we're dealing with (implementation might change)
     var id = ref.find(".vid").html();  // @todo maybe put into separate method
     // (1) duplicate default element template and insert below current one
@@ -257,7 +257,54 @@ function vDoSaveElementPart1(ref,data) {
     
 }
 
+/* Given a DOM entry, find the Vyperlink Element-ID it relates to.
+   Traverse DOM tree upwards as necessary.
+*/
+function getElementId(el)
+{
+    var rootelement = $(el).parents(".element");
+    var id = rootelement.find(".vid").html();
+    return id;
+}
 
+function vOnConvertToTextElement()
+{
+    //vEditOrSaveElement("save",$(this).parents(".element"));
+}
+
+function vOnConvertToQueryElement()
+{
+    var id = getElementId(this);
+    $.ajax({
+	method: "post",
+	url: "/converttoqueryelement",
+	data: { "id":id },
+	success: function(data,textStatus,xhr) {
+	    window.location.reload();
+	    //alert("success");
+	},
+	error: function() {
+	    alert("error");
+	}
+    });
+    
+}
+
+
+/* More... button was mouseovered - display submenu */
+function vOnElementMore()
+{
+    el = $(this);
+    var popup = $('<div class="morepopup" onmouseleave="$(this).remove();">' +
+		  '<ul><li><a class="converttoqueryelementbutton" href="#">convert to QueryElement</a></li>' +
+		  '<li><a class="converttotextelementbutton" href="#">convert to TextElement</a></li>' +
+		  '<li><a class="insertbelowbutton" href="#">insert Element below</a></li>' +
+		  '</ul></div>');
+    el.after(popup);
+    $("li a.insertbelowbutton").on("click",vOnInsertBelow);
+    $(".converttotextelementbutton").on("click",vOnConvertToTextElement);
+    $(".converttoqueryelementbutton").on("click",vOnConvertToQueryElement);
+}
 
 /* "main" */
 
@@ -267,4 +314,5 @@ $(function() {
     $(".insertbelowbutton").on("click",vOnInsertBelow);
     $(".insertabovebutton").on("click",vOnInsertAbove);
     $(".newdocbutton").on("click",vOnNewDoc);
+    $(".morebutton").on("mouseover",vOnElementMore);
 });

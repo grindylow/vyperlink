@@ -24,6 +24,12 @@ class Element:
     def getID(self):
         return self.vars['v_id']
 
+    def setID(self,id):
+        self.vars['v_id'] = id
+
+    def setTS(self,ts):
+        self.vars['v_ts'] = ts
+
     def getHTML(self,dbcollection=None):
         """
         Convenience method for initial implementation: return
@@ -143,7 +149,7 @@ class QueryElement(Element):
         # the choice of backend doesn't matter much, though.
         
         # Step 1: retrieve all matching element IDs
-        r = dbcollection.find({'v_id':{"$regex":'^TICKET1.*'}}).distinct('v_id')
+        r = dbcollection.find({'v_id':{"$regex":'^TICKET1[.]\d+'}}).distinct('v_id')
 
         # Step 2: for each ID, retrieve latest version (considering
         # query time)
@@ -175,7 +181,11 @@ class QueryElement(Element):
             for c in columns:
                 s += '<td valign="top">'
                 if o.has_key(c):
+                    if c=="v_id":
+                        s+="<a href='/show/"+o[c]+"'>"
                     s += o[c]
+                    if c=="v_id":
+                        s+="</a>"
                 s += "</td>"
             s += "</tr>"
         s += "</table>"

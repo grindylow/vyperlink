@@ -18,6 +18,19 @@ toolbar = DebugToolbarExtension(app)
 def hello():
     return render_template("home.html")
 
+@app.route("/converttoqueryelement",methods=["POST"])
+def converttoqueryelement():
+    collection = openDB()
+    id = request.form["id"]
+    r = Element.retrieveFromDB(collection,id)
+    if not isinstance(r, TextElement):
+        return jsonify(r="failure - not a TextElement to begin with")
+    n = QueryElement({})
+    n.setID(r.getID())
+    n.setTS(datetime.utcnow())
+    n.save(collection)
+    return jsonify(r="success")
+
 @app.route("/getrawforediting")
 def getrawforediting():
     collection = openDB()

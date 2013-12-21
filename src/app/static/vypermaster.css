@@ -51,3 +51,16 @@ padding-bottom:4px;
 
 .actions:hover { background: lightgrey;
 }
+
+.actions .morepopup { background: red;
+		z-index: 33;
+		position: absolute;
+		width: 200px;
+}
+
+div.morepopup ul { margin: 2px;
+                   padding: 1px 5px 1px 5px;
+		   list-style-type: none;
+		   background: yellow;
+		   font-size: 75%;
+}
