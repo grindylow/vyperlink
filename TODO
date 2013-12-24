@@ -1,4 +1,7 @@
 Vyperlink Todo
 ==============
 
-- ...
+- Instead of dealing with Element IDs and Parent IDs, use unique PATHs
+  to each Element. This allows for nesting naturally.  Could simply
+  store absolut element path in the HTML of each element for now.
+

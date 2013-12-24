@@ -31,6 +31,20 @@ def converttoqueryelement():
     n.save(collection)
     return jsonify(r="success")
 
+@app.route("/removeelementfromcontainer",methods=["POST"])
+def removeelementfromcontainer():
+    collection = openDB()
+    id = request.form["id"]
+    parentid = request.form["parentid"]
+    r = Element.retrieveFromDB(collection,parentid)
+    if not isinstance(r, CollectionElement):
+        return jsonify(r="failure - parent is not a CollectionElement")
+    ts = datetime.utcnow()
+    r.vars['v_contained_ids'].remove(id)
+    r.vars['v_ts'] = ts
+    r.save(collection)
+    return jsonify(r="success")
+
 @app.route("/getrawforediting")
 def getrawforediting():
     collection = openDB()

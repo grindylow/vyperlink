@@ -19,21 +19,81 @@ function findDocumentId() {
     return id;
 }
 
+/* Given any descendant of a HTML "element" object, find the
+   master (root) node of that element.*/
+function findRootOfCurrentElement(domel)
+{
+    return $(domel).parents(".element");
+}
+
+/* Given a DOM entry, find the Vyperlink Element-ID it relates to.
+   Traverse DOM tree upwards as necessary.
+*/
+function getElementId(el)
+{
+    var rootelement = findRootOfCurrentElement(el);
+    var id = rootelement.find(".vid").html();
+    return id;
+}
 
 
-/* UI callbacks */
+/* ================================================================ */
+/* UI callbacks                                                     */
+/* ================================================================ */
 
 function vOnEdit() {
-    vEditOrSaveElement("edit",$(this).parents(".element"));
+    vEditOrSaveElement("edit",findRootOfCurrentElement(this));
 }
 
 function vOnSave() {
-    vEditOrSaveElement("save",$(this).parents(".element"));
+    vEditOrSaveElement("save",findRootOfCurrentElement(this));
 }
 
 function vOnInsertBelow() {
-    el = $(this);
-    var ref = el.parents(".element");  // was: el.parent().parent();
+    vDoInsertAboveOrBelow(findRootOfCurrentElement(this),"below");
+}
+
+function vOnInsertAbove() {
+    vDoInsertAboveOrBelow(findRootOfCurrentElement(this),"above");
+}
+
+function vOnRemoveFromContainer() {
+    vDoRemoveFromContainer(findRootOfCurrentElement(this));
+}
+
+function vOnDeleteElement() {
+    vDoDeleteElement(findRootOfCurrentElement(this));
+}
+
+
+/* ================================================================ */
+/* Actual Workers                                                   */
+/* ================================================================ */
+
+function vDoRemoveFromContainer(ref)
+{
+    var id = ref.find(".vid").html();  // @todo maybe put into separate method
+    $.ajax({
+	method: "post",
+	url: "/removeelementfromcontainer",
+	data: { "id":id,
+		"parentid":findDocumentId() },
+	success: function(data,textStatus,xhr) {
+	    // remove from DOM tree, as a more pleasing alternative to window.location.reload();
+	    ref.remove();
+	    //alert("success");
+	},
+	error: function() {
+	    alert("error");
+	}
+    });
+}
+
+
+/* Insert a new element above (where=="above") or below (where=="below")
+   the DOM element specified by ref */
+function vDoInsertAboveOrBelow(ref,where,bEditRightAway=false)
+{
     // find the ID of the element we're dealing with (implementation might change)
     var id = ref.find(".vid").html();  // @todo maybe put into separate method
     // (1) duplicate default element template and insert below current one
@@ -50,53 +110,33 @@ function vOnInsertBelow() {
     clone.find(".vid").html("retrieving...");
     clone.find(".debuginfo").html("retrieving...");
     clone.find(".itempresenter").html("empty<br/>2.<br/>3.");
-    ref.after(clone);
+
+    var url="/undefined1";
+    if(where=="below") {
+	ref.after(clone);
+	url = "/insertbelow";
+    } else if(where=="above") {
+	ref.before(clone);
+	url = "/insertabove";
+    } else {
+	alert("Unknown 'where': "+where);
+    }
 
     // (2) asynchronous insertion request. Wails and woe if it fails.
     $.ajax({
-	url: "/insertbelow",
+	url: url,
 	data: { "id":id, "parentid":findDocumentId() },
 	// @todo unique element path (starting from root, 
 	// allowing for multiple element instances)
 	type: "post",
 	success: function(data,textStatus,xhr) {
 	    vInsertionConfirmed(clone,data);
+	    if(bEditRightAway) {
+		vEditOrSaveElement("edit",clone);
+	    }
 	},
 	error: function() {
-	    alert("error during /insertbelow");
-	}
-    });
-}
-
-function vOnInsertAbove() {
-    el = $(this);
-    var ref = el.parent().parent();
-    // find the ID of the element we're dealing with (implementation might change)
-    var id = ref.find(".vid").html();  // @todo maybe put into separate method
-    // detailed comments see vOnInsertBelow()
-
-    // (1) clone on screen
-    template_element = $(".element")[0];
-    clone = $(template_element).clone(true);
-    // modify the clone's data where necessary
-    // ...
-    clone.find(".vid").html("retrieving...");
-    clone.find(".debuginfo").html("retrieving...");
-    clone.find(".itempresenter").html("empty<br/>2.<br/>3.");
-    ref.before(clone);
-
-    // (2) asynchronous insertion request. Wails and woe if it fails.
-    $.ajax({
-	url: "/insertabove",
-	data: { "id":id, "parentid":findDocumentId() },
-	// @todo unique element path (starting from root, 
-	// allowing for multiple element instances)
-	type: "post",
-	success: function(data,textStatus,xhr) {
-	    vInsertionConfirmed(clone,data);
-	},
-	error: function() {
-	    alert("error during /insertabove");
+	    alert("error during vDoInsertAboveOrBelow(ref,where="+where+").");
 	}
     });
 }
@@ -118,7 +158,7 @@ function vOnNewDoc() {
 
 /* capture common functionality of the two.
      in action: "edit" or "save"
-    in el:     jquery element pointing to the clicked button
+    in el:     jquery element pointing to the clicked button? el root!!
 */
 function vEditOrSaveElement( action, el ) {
     var ref = el; //.parent().parent();
@@ -154,6 +194,11 @@ function vEditOrSaveElement( action, el ) {
 	var editbox = ref.find(".itemeditor");
 	var textarea = editbox.find("textarea");
 	var rawtext = textarea.val();
+
+	// Remove all callbacks, ready for next editing action.
+	// ** IMPORTANT!! Really should be done "on-exit" from editing. **
+	textarea.off();
+
 	//alert(rawtext);
 	$.ajax({
 	    url: "/putrawafterediting",
@@ -178,6 +223,7 @@ function vDoEditElement(ref,data) {
     var editbox = ref.find(".itemeditor");
     var textarea = editbox.find("textarea");
     var displaybox = ref.find(".itempresenter");
+    var previous_keyup_event; // to detect double-ENTER
     //alert(editbox.html());
     displaybox.hide("fast");
     textarea.val(data.r);
@@ -216,6 +262,19 @@ function vDoEditElement(ref,data) {
 		vSaveCurrentAndProceedUpOrDown($(this).parents(".element"),"up");
 	    }
 	}
+	if(a.which == 13) { // Hitting ENTER twice will create a new element,
+                            // splitting the current element at the caret position.
+	    if(previous_keyup_event.which == 13) {
+		// split
+		//alert("splitting");
+		// (1) (Trigger) save(ing) current element
+		vEditOrSaveElement("save",$(this).parents(".element")); 
+		// (2) Insert a new element below, and start editing it right away
+		vDoInsertAboveOrBelow(ref,"below",true);
+
+	    }
+	}
+	previous_keyup_event = a;
     });
     //alert(data.r);
 }
@@ -262,7 +321,7 @@ function vDoSaveElementPart1(ref,data) {
 */
 function getElementId(el)
 {
-    var rootelement = $(el).parents(".element");
+    var rootelement = findRootOfCurrentElement(el);
     var id = rootelement.find(".vid").html();
     return id;
 }
@@ -287,7 +346,6 @@ function vOnConvertToQueryElement()
 	    alert("error");
 	}
     });
-    
 }
 
 
@@ -299,11 +357,15 @@ function vOnElementMore()
 		  '<ul><li><a class="converttoqueryelementbutton" href="#">convert to QueryElement</a></li>' +
 		  '<li><a class="converttotextelementbutton" href="#">convert to TextElement</a></li>' +
 		  '<li><a class="insertbelowbutton" href="#">insert Element below</a></li>' +
+		  '<li><a class="removefromcontainerbutton" href="#">remove Element from container</a></li>' +
+		  '<li><a class="deleteelementbutton" href="#">delete Element</a></li>' +
 		  '</ul></div>');
     el.after(popup);
     $("li a.insertbelowbutton").on("click",vOnInsertBelow);
     $(".converttotextelementbutton").on("click",vOnConvertToTextElement);
     $(".converttoqueryelementbutton").on("click",vOnConvertToQueryElement);
+    $(".removefromcontainerbutton").on("click",vOnRemoveFromContainer);
+    $(".deleteelementbutton").on("click",vOnDeleteElement);
 }
 
 /* "main" */
