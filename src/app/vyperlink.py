@@ -45,6 +45,17 @@ def removeelementfromcontainer():
     r.save(collection)
     return jsonify(r="success")
 
+@app.route("/deleteelement",methods=["POST"])
+def deleteelement():
+    collection = openDB()
+    id = request.form["id"]
+    r = Element.retrieveFromDB(collection,id)
+    ts = datetime.utcnow()
+    r.setTS(ts)
+    r.markAsDeleted()
+    r.save(collection)
+    return jsonify(r="success")
+
 @app.route("/getrawforediting")
 def getrawforediting():
     collection = openDB()

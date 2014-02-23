@@ -30,6 +30,9 @@ class Element:
     def setTS(self,ts):
         self.vars['v_ts'] = ts
 
+    def markAsDeleted(self):
+        self.vars['v_deleted'] = True
+
     def getHTML(self,dbcollection=None):
         """
         Convenience method for initial implementation: return
@@ -159,7 +162,7 @@ class QueryElement(Element):
             # omit if deleted
             if not e:
                 raise "Should have returned a valid result."
-            if not e.has_key('v_deleted') or not e.v_deleted:
+            if not e.has_key('v_deleted') or not e['v_deleted']:
                 obj_ids.append(e)
 
         # Step 3: if that version hasn't been deleted (note: already

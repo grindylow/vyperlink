@@ -43,26 +43,40 @@ function getElementId(el)
 
 function vOnEdit() {
     vEditOrSaveElement("edit",findRootOfCurrentElement(this));
+    return false; // prevent default action (scroll to # anchor)
 }
 
 function vOnSave() {
     vEditOrSaveElement("save",findRootOfCurrentElement(this));
+    return false; // prevent default action (scroll to # anchor)
 }
 
 function vOnInsertBelow() {
     vDoInsertAboveOrBelow(findRootOfCurrentElement(this),"below");
+    return false; // prevent default action (scroll to # anchor)
 }
 
 function vOnInsertAbove() {
     vDoInsertAboveOrBelow(findRootOfCurrentElement(this),"above");
+    return false; // prevent default action (scroll to # anchor)
 }
 
 function vOnRemoveFromContainer() {
     vDoRemoveFromContainer(findRootOfCurrentElement(this));
+    return false; // prevent default action (scroll to # anchor)
 }
 
 function vOnDeleteElement() {
-    vDoDeleteElement(findRootOfCurrentElement(this));
+    /* We remove the element from the current container, and then we
+       mark it as deleted in our backend database.  In real life, we
+       should also flag up any other references to the element
+       (provided we allow for duplicate references in the first place)
+       and give the user a choice of deleting the element or simply
+       removing this reference.
+    */
+    vDoRemoveFromContainer(findRootOfCurrentElement(this));
+    vDoDeleteElement(findRootOfCurrentElement(this)); 
+    return false; // prevent default action (scroll to # anchor)
 }
 
 
@@ -88,6 +102,25 @@ function vDoRemoveFromContainer(ref)
 	}
     });
 }
+
+function vDoDeleteElement(ref)
+{
+    var id = ref.find(".vid").html();  // @todo maybe put into separate method
+    $.ajax({
+	method: "post",
+	url: "/deleteelement",
+	data: { "id":id },
+	success: function(data,textStatus,xhr) {
+	    // remove from DOM tree, as a more pleasing alternative to window.location.reload();
+	    ref.remove();
+	    //alert("success");
+	},
+	error: function() {
+	    alert("error");
+	}
+    });
+}
+
 
 
 /* Insert a new element above (where=="above") or below (where=="below")
